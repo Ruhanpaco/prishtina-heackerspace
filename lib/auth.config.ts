@@ -38,14 +38,20 @@ export const authConfig = {
         authorized({ auth, request: { nextUrl } }) {
             const isLoggedIn = !!auth?.user;
             const isDashboard = nextUrl.pathname.startsWith('/dashboard');
-            const isAuthRoute = nextUrl.pathname === '/' || nextUrl.pathname === '/signup' || nextUrl.pathname === '/auth/verify';
+            const isAuthRoute = nextUrl.pathname === '/' || nextUrl.pathname.startsWith('/auth');
 
-            if (isDashboard) {
-                if (isLoggedIn) return true;
-                return false; // Redirect to login
-            } else if (isLoggedIn && isAuthRoute) {
-                return Response.redirect(new URL('/dashboard', nextUrl));
+            // Redirect to login if accessing dashboard without auth
+            if (isDashboard && !isLoggedIn) {
+                const loginUrl = new URL('/auth/login', nextUrl.origin);
+                loginUrl.searchParams.set('callbackUrl', nextUrl.pathname);
+                return Response.redirect(loginUrl);
             }
+
+            // Redirect to dashboard if already logged in and trying to access auth pages
+            if (isLoggedIn && isAuthRoute) {
+                return Response.redirect(new URL('/dashboard', nextUrl.origin));
+            }
+
             return true;
         },
     },

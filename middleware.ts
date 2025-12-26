@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { auth } from '@/lib/auth';
 
 // In-memory rate limiting (for production, use Redis/Upstash)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -66,9 +65,6 @@ function detectSuspiciousActivity(request: NextRequest): boolean {
         /wget/i,
         /python-requests/i,
         /scrapy/i,
-        /bot/i,
-        /crawler/i,
-        /spider/i
     ];
 
     // Allow legitimate bots (Google, Bing, etc.)
@@ -86,7 +82,7 @@ function detectSuspiciousActivity(request: NextRequest): boolean {
     return isSuspicious && !isAllowed;
 }
 
-export async function middleware(request: NextRequest) {
+export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const ip = getClientIP(request);
 
@@ -125,25 +121,7 @@ export async function middleware(request: NextRequest) {
         );
     }
 
-    // 4. Authentication Check for Protected Routes
-    const protectedPaths = ['/dashboard'];
-    const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path));
-
-    if (isProtectedPath) {
-        const session = await auth();
-
-        if (!session?.user) {
-            const url = request.nextUrl.clone();
-            url.pathname = '/auth/login';
-            url.searchParams.set('callbackUrl', pathname);
-            return NextResponse.redirect(url);
-        }
-
-        // Add user info to response headers for debugging (optional)
-        response.headers.set('X-User-ID', session.user.id || 'unknown');
-    }
-
-    // 5. CORS for API routes (if needed for external access)
+    // 4. CORS for API routes (if needed for external access)
     if (pathname.startsWith('/api')) {
         response.headers.set('Access-Control-Allow-Credentials', 'true');
         response.headers.set('Access-Control-Allow-Origin', process.env.NEXTAUTH_URL || '*');
