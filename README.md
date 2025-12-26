@@ -154,6 +154,211 @@ graph TB
 
 ---
 
+## 🔄 How It Works - Flow Diagrams
+
+### Authentication Flow
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Browser
+    participant Middleware
+    participant API
+    participant NextAuth
+    participant DB
+    participant Email
+
+    User->>Browser: Enter credentials
+    Browser->>API: POST /api/v1/auth/login
+    API->>DB: Find user by email
+    DB-->>API: User data
+    API->>API: Verify password (bcrypt)
+    API->>NextAuth: Create session
+    NextAuth-->>API: Session token
+    API-->>Browser: Set secure cookie
+    Browser-->>User: Redirect to dashboard
+    
+    Note over Middleware: All subsequent requests
+    Browser->>Middleware: Request with cookie
+    Middleware->>NextAuth: Validate session
+    NextAuth-->>Middleware: Session valid
+    Middleware-->>Browser: Allow access
+```
+
+### API Request Flow (with Rate Limiting)
+
+```mermaid
+sequenceDiagram
+    actor Client
+    participant Middleware
+    participant RateLimit
+    participant Auth
+    participant API
+    participant DB
+
+    Client->>Middleware: API Request
+    Middleware->>RateLimit: Check IP rate limit
+    
+    alt Rate limit exceeded
+        RateLimit-->>Client: 429 Too Many Requests
+    else Rate limit OK
+        RateLimit->>Middleware: Continue
+        Middleware->>Auth: Validate token/session
+        
+        alt Invalid auth
+            Auth-->>Client: 401 Unauthorized
+        else Valid auth
+            Auth->>API: Forward request
+            API->>DB: Query/Update data
+            DB-->>API: Response
+            API-->>Client: 200 OK + Data
+        end
+    end
+```
+
+### Email Verification Flow
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant API
+    participant DB
+    participant Email
+
+    User->>Frontend: Click "Verify Email"
+    Frontend->>API: POST /api/v1/auth/send-verification
+    API->>API: Generate 6-digit OTP
+    API->>DB: Store token + expiry (10 min)
+    DB-->>API: Saved
+    API->>Email: Send verification email
+    Email-->>User: Email with OTP
+    
+    User->>Frontend: Enter OTP code
+    Frontend->>API: POST /api/v1/auth/verify-email
+    API->>DB: Verify token & expiry
+    
+    alt Token valid
+        DB-->>API: Token matches
+        API->>DB: Set emailVerified = now()
+        API->>DB: Clear token
+        API-->>Frontend: 200 Success
+        Frontend-->>User: "Email verified!"
+    else Token invalid/expired
+        DB-->>API: Token mismatch
+        API-->>Frontend: 400 Invalid code
+        Frontend-->>User: "Invalid or expired code"
+    end
+```
+
+### User Registration Journey
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Signup
+    participant API
+    participant DB
+    participant Email
+    participant Dashboard
+
+    User->>Signup: Fill registration form
+    Signup->>API: POST /api/v1/auth/signup
+    API->>API: Validate input (Zod)
+    API->>DB: Check if email exists
+    
+    alt Email exists
+        DB-->>API: User found
+        API-->>Signup: 409 Conflict
+        Signup-->>User: "Email already registered"
+    else New user
+        DB-->>API: No user found
+        API->>API: Hash password (bcrypt)
+        API->>DB: Create user
+        DB-->>API: User created
+        API->>Email: Send welcome email
+        API-->>Signup: 201 Created
+        Signup->>Signup: Auto-login
+        Signup->>Dashboard: Redirect to dashboard
+        Dashboard-->>User: Show onboarding
+        
+        Note over User,Dashboard: User can verify email later
+    end
+```
+
+### Payment Processing Flow (Planned)
+
+```mermaid
+sequenceDiagram
+    actor Member
+    participant Dashboard
+    participant API
+    participant Stripe
+    participant DB
+    participant Email
+
+    Member->>Dashboard: Click "Pay Membership"
+    Dashboard->>API: POST /api/v1/payments/create
+    API->>Stripe: Create checkout session
+    Stripe-->>API: Session URL
+    API-->>Dashboard: Redirect URL
+    Dashboard->>Stripe: Redirect to Stripe
+    
+    Member->>Stripe: Complete payment
+    Stripe->>API: Webhook: payment.succeeded
+    API->>DB: Create payment record
+    API->>DB: Update user.hasAccess = true
+    API->>Email: Send invoice
+    Email-->>Member: Invoice email
+    
+    Stripe-->>Member: Redirect to success page
+    Member->>Dashboard: Return to dashboard
+    Dashboard-->>Member: Show "Payment successful"
+```
+
+### Middleware Security Flow
+
+```mermaid
+sequenceDiagram
+    actor Client
+    participant Middleware
+    participant RateLimit
+    participant BotDetect
+    participant Auth
+    participant Route
+
+    Client->>Middleware: HTTP Request
+    
+    Middleware->>Middleware: Add security headers
+    Note over Middleware: HSTS, X-Frame-Options, CSP, etc.
+    
+    Middleware->>RateLimit: Check IP rate limit
+    alt Rate limit exceeded
+        RateLimit-->>Client: 429 Too Many Requests
+    else OK
+        Middleware->>BotDetect: Check User-Agent
+        alt Suspicious bot
+            BotDetect-->>Client: 403 Forbidden
+        else Legitimate
+            Middleware->>Auth: Check if protected route
+            alt Protected route
+                Auth->>Auth: Validate session
+                alt No session
+                    Auth-->>Client: 302 Redirect to /login
+                else Valid session
+                    Auth->>Route: Forward request
+                    Route-->>Client: 200 OK
+                end
+            else Public route
+                Middleware->>Route: Forward request
+                Route-->>Client: 200 OK
+            end
+        end
+    end
+```
+
+---
+
 ## 🚀 Features
 
 ### ✅ Implemented
