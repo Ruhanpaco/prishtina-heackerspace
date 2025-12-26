@@ -5,7 +5,7 @@ import dbConnect from '@/lib/mongodb/dbConnect';
 
 export async function POST(req: NextRequest) {
     await dbConnect();
-    const auth = await authenticateAPI(req);
+    const auth = await authenticateAPI();
     if (!auth) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
