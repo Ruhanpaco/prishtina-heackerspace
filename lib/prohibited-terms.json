@@ -1,0 +1,173 @@
+{
+    "version": "1.1",
+    "purpose": "Comprehensive blocklist for inappropriate, prohibited, and high-risk websites",
+    "last_updated": "2025-01-01",
+    "categories": {
+        "adult_pornography": {
+            "description": "Pornographic and explicit sexual content",
+            "blocked_domains": [
+                "pornhub.com",
+                "xvideos.com",
+                "xnxx.com",
+                "redtube.com",
+                "youporn.com",
+                "hentaihaven.xxx",
+                "chaturbate.com",
+                "onlyfans.com"
+            ],
+            "blocked_keywords": [
+                "porn",
+                "xxx",
+                "sex",
+                "nsfw",
+                "cam",
+                "hentai",
+                "fetish",
+                "webcam"
+            ],
+            "blocked_url_patterns": [
+                "/porn/",
+                "/xxx/",
+                "/nsfw/",
+                "/cams/"
+            ]
+        },
+        "escort_and_sex_services": {
+            "description": "Escort services, prostitution, sexual transactions",
+            "blocked_domains": [
+                "adultfriendfinder.com",
+                "escortdirectory.com",
+                "skipthegames.com",
+                "tryst.link"
+            ],
+            "blocked_keywords": [
+                "escort",
+                "companions",
+                "hookup",
+                "sugar",
+                "massage-girls"
+            ]
+        },
+        "scam_and_fraud": {
+            "description": "Online scams, fake offers, impersonation",
+            "blocked_domains": [
+                "freegiftcards.net",
+                "winbigprizes.com",
+                "get-rich-quick.net",
+                "claim-reward-now.com"
+            ],
+            "blocked_keywords": [
+                "free money",
+                "instant payout",
+                "guaranteed profit",
+                "limited offer",
+                "act now"
+            ],
+            "blocked_url_patterns": [
+                "/giveaway/",
+                "/claim/",
+                "/reward/",
+                "/bonus/"
+            ]
+        },
+        "phishing_and_identity_theft": {
+            "description": "Credential harvesting and account impersonation",
+            "blocked_domains": [
+                "paypal-secure-login.com",
+                "appleid-verification.net",
+                "google-account-check.com",
+                "bank-login-update.com"
+            ],
+            "blocked_keywords": [
+                "verify account",
+                "account suspended",
+                "security alert",
+                "confirm identity"
+            ],
+            "blocked_url_patterns": [
+                "/login/verify",
+                "/secure-update",
+                "/account-check"
+            ]
+        },
+        "malware_and_piracy": {
+            "description": "Viruses, trojans, cracked or pirated software",
+            "blocked_domains": [
+                "thepiratebay.org",
+                "1337x.to",
+                "rarbg.to",
+                "cracked-software-download.com"
+            ],
+            "blocked_keywords": [
+                "crack",
+                "keygen",
+                "serial",
+                "warez",
+                "mod apk"
+            ],
+            "blocked_url_patterns": [
+                "/crack/",
+                "/keygen/",
+                "/download-hack/"
+            ]
+        },
+        "illegal_drugs": {
+            "description": "Drug sales, illegal substances",
+            "blocked_domains": [
+                "darkmarket.org",
+                "weed-for-sale.net",
+                "buycocaineonline.com"
+            ],
+            "blocked_keywords": [
+                "buy drugs",
+                "weed delivery",
+                "mdma",
+                "lsd",
+                "cocaine"
+            ]
+        },
+        "gambling_and_betting": {
+            "description": "Online gambling, betting, and casinos",
+            "blocked_domains": [
+                "bet365.com",
+                "stake.com",
+                "1xbet.com",
+                "roobet.com"
+            ],
+            "blocked_keywords": [
+                "casino",
+                "bet",
+                "slots",
+                "jackpot",
+                "crypto casino"
+            ]
+        },
+        "extreme_violence_and_harm": {
+            "description": "Gore, extreme violence, self-harm promotion",
+            "blocked_domains": [
+                "bestgore.com",
+                "liveleak.com",
+                "watchpeopledie.tv"
+            ],
+            "blocked_keywords": [
+                "gore",
+                "extreme violence",
+                "self harm",
+                "death video"
+            ]
+        }
+    },
+    "global_blocking_rules": {
+        "block_suspicious_tlds": [
+            ".xyz",
+            ".top",
+            ".click",
+            ".adult",
+            ".cam",
+            ".zip"
+        ],
+        "block_shortened_urls": true,
+        "block_new_domains_under_days": 30,
+        "block_ip_only_urls": true
+    }
+}
