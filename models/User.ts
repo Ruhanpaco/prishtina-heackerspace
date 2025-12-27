@@ -37,6 +37,35 @@ export interface IUser extends Document {
     hasAccess: boolean; // Door access control
     rfidTag?: string;   // Physical card ID
 
+    // Token Management
+    refreshTokens: {
+        tokenId: string;
+        expiresAt: Date;
+        createdAt: Date;
+        lastUsedAt: Date;
+        userAgent?: string;
+        ipAddress?: string;
+    }[];
+
+    // Encrypted Image Storage
+    profileImage?: {
+        data: string; // Encrypted base64
+        iv: string;   // Initialization vector
+        authTag: string; // GCM auth tag
+        uploadedAt: Date;
+    };
+
+    // Encrypted Document Storage
+    documents: {
+        type: 'ID_CARD' | 'PASSPORT' | 'DRIVER_LICENSE' | 'OTHER';
+        name: string;
+        data: string; // Encrypted base64
+        iv: string;
+        authTag: string;
+        uploadedAt: Date;
+        verifiedAt?: Date;
+    }[];
+
     uuid?: string;
     emailVerified?: Date;
     verificationToken?: string;
@@ -92,6 +121,43 @@ const UserSchema: Schema<IUser> = new Schema(
         membershipStatus: { type: String, enum: ['ACTIVE', 'INACTIVE', 'PENDING', 'SUSPENDED'], default: 'PENDING' },
         hasAccess: { type: Boolean, default: false },
         rfidTag: { type: String, sparse: true, unique: true }, // Sparse allows null/undefined to be non-unique
+
+        // Token Management
+        refreshTokens: {
+            type: [{
+                tokenId: { type: String, required: true },
+                expiresAt: { type: Date, required: true },
+                createdAt: { type: Date, default: Date.now },
+                lastUsedAt: { type: Date, default: Date.now },
+                userAgent: { type: String },
+                ipAddress: { type: String },
+            }],
+            default: [],
+            select: false, // Don't return by default
+        },
+
+        // Encrypted Image Storage
+        profileImage: {
+            data: { type: String }, // Encrypted base64
+            iv: { type: String },   // Initialization vector
+            authTag: { type: String }, // GCM auth tag
+            uploadedAt: { type: Date },
+        },
+
+        // Encrypted Document Storage
+        documents: {
+            type: [{
+                type: { type: String, enum: ['ID_CARD', 'PASSPORT', 'DRIVER_LICENSE', 'OTHER'], required: true },
+                name: { type: String, required: true },
+                data: { type: String, required: true }, // Encrypted base64
+                iv: { type: String, required: true },
+                authTag: { type: String, required: true },
+                uploadedAt: { type: Date, default: Date.now },
+                verifiedAt: { type: Date },
+            }],
+            default: [],
+            select: false, // Don't return by default for security
+        },
 
         // System
         emailVerified: { type: Date },
