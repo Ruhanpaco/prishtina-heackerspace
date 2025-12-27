@@ -1,7 +1,6 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import dbConnect from '@/lib/mongodb/dbConnect';
-import TokenBlacklist from '@/models/TokenBlacklist';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET!;
@@ -20,10 +19,10 @@ interface RefreshTokenPayload {
 }
 
 /**
- * Generate a unique token ID
+ * Generate a unique token ID (264 bytes as specified)
  */
 export function generateTokenId(): string {
-    return crypto.randomBytes(32).toString('hex');
+    return crypto.randomBytes(264).toString('base64');
 }
 
 /**
@@ -80,6 +79,7 @@ export function verifyRefreshToken(token: string): RefreshTokenPayload | null {
 export async function isTokenBlacklisted(tokenId: string): Promise<boolean> {
     try {
         await dbConnect();
+        const TokenBlacklist = (await import('@/models/TokenBlacklist')).default;
         const blacklisted = await TokenBlacklist.findOne({
             tokenId,
             expiresAt: { $gt: new Date() },
@@ -149,6 +149,7 @@ export async function blacklistAllUserTokens(userId: string): Promise<void> {
 export async function cleanupExpiredTokens(): Promise<void> {
     try {
         await dbConnect();
+        const TokenBlacklist = (await import('@/models/TokenBlacklist')).default;
         await TokenBlacklist.deleteMany({
             expiresAt: { $lt: new Date() },
         });
