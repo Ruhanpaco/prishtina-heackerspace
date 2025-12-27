@@ -101,6 +101,7 @@ export async function blacklistToken(
 ): Promise<void> {
     try {
         await dbConnect();
+        const TokenBlacklist = (await import('@/models/TokenBlacklist')).default;
         const expiresAt = new Date(Date.now() + REFRESH_TOKEN_LIFETIME * 1000);
 
         await TokenBlacklist.create({
