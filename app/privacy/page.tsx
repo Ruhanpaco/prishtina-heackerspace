@@ -1,4 +1,4 @@
-import { Separator } from "@/components/ui/separator";
+import { Separator } from "@/components/ui/separator"; // Force Node.js runtime for this page
 
 export default function PrivacyPolicyPage() {
     return (

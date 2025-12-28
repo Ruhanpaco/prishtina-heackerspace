@@ -9,6 +9,7 @@ import {
     User,
     Folder,
     Users,
+    MapPin,
     Settings,
     LogOut,
 } from "lucide-react";
@@ -35,6 +36,11 @@ const sidebarItems = [
         title: "Community",
         href: "/dashboard/community",
         icon: Users,
+    },
+    {
+        title: "Presence",
+        href: "/dashboard/presence",
+        icon: MapPin,
     },
     {
         title: "Settings",

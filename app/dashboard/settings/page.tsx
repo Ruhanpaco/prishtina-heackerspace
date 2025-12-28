@@ -258,7 +258,7 @@ export default function SettingsPage() {
     const handleAddSecondaryEmail = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch('/api/v1/users/emails', {
+            const res = await fetch('/api/v1/auth/emails', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: newSecondaryEmail }),
@@ -280,7 +280,7 @@ export default function SettingsPage() {
     const handleRemoveSecondaryEmail = async (email: string) => {
         setIsLoading(true);
         try {
-            const res = await fetch('/api/v1/users/emails', {
+            const res = await fetch('/api/v1/auth/emails', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email }),
@@ -373,7 +373,7 @@ export default function SettingsPage() {
                 links
             };
 
-            const res = await fetch(`/api/v1/users/${session.user.id}`, {
+            const res = await fetch('/api/v1/auth/profile', {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)

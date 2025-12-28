@@ -35,7 +35,12 @@ export interface IUser extends Document {
     role: 'ADMIN' | 'STAFF' | 'MEMBER' | 'USER';
     membershipStatus: 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'SUSPENDED';
     hasAccess: boolean; // Door access control
-    rfidTag?: string;   // Physical card ID
+    rfidTag?: string;   // Physical card ID (Legacy)
+    rfidUid?: string;   // Physical RFID Card UID
+    rfidApiKey?: string; // API Key stored on the physical card
+    isCheckedIn: boolean; // Current presence status
+    lastCheckIn?: Date;
+    lastCheckOut?: Date;
 
     // Token Management
     refreshTokens: {
@@ -121,6 +126,11 @@ const UserSchema: Schema<IUser> = new Schema(
         membershipStatus: { type: String, enum: ['ACTIVE', 'INACTIVE', 'PENDING', 'SUSPENDED'], default: 'PENDING' },
         hasAccess: { type: Boolean, default: false },
         rfidTag: { type: String, sparse: true, unique: true }, // Sparse allows null/undefined to be non-unique
+        rfidUid: { type: String, sparse: true, unique: true },
+        rfidApiKey: { type: String, select: false },
+        isCheckedIn: { type: Boolean, default: false },
+        lastCheckIn: { type: Date },
+        lastCheckOut: { type: Date },
 
         // Token Management
         refreshTokens: {
