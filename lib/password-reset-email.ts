@@ -2,13 +2,13 @@ const nodemailer = require('nodemailer');
 
 // Create a transporter function to ensure it's created at runtime
 const getTransporter = () => {
-    return nodemailer.createTransporter({
-        host: process.env.EMAIL_HOST,
-        port: parseInt(process.env.EMAIL_PORT || '587'),
+    return nodemailer.createTransport({
+        host: process.env.EMAIL_SERVER_HOST || process.env.EMAIL_HOST,
+        port: parseInt(process.env.EMAIL_SERVER_PORT || process.env.EMAIL_PORT || '587'),
         secure: false,
         auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASSWORD,
+            user: process.env.EMAIL_SERVER_USER || process.env.EMAIL_USER,
+            pass: process.env.EMAIL_SERVER_PASSWORD || process.env.EMAIL_PASSWORD,
         },
     });
 };
