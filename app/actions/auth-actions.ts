@@ -18,7 +18,10 @@ export async function authenticate(
 
     try {
         // Use validated data instead of raw formData
-        await signIn("credentials", validation.data);
+        await signIn("credentials", {
+            ...validation.data,
+            redirectTo: "/dashboard",
+        });
     } catch (error) {
         if (error instanceof AuthError) {
             switch (error.type) {
