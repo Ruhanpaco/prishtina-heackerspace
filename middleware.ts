@@ -81,6 +81,8 @@ function detectSuspiciousActivity(request: NextRequest): boolean {
 const PUBLIC_API_ROUTES = [
     '/api/v2/POST/auth/login',
     '/api/v2/POST/auth/signup',
+    '/api/v2/POST/auth/forgot-password',
+    '/api/v2/POST/auth/reset-password',
 ];
 
 // Methods that require CSRF protection
