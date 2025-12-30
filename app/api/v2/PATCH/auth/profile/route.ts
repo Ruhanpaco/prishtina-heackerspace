@@ -13,6 +13,9 @@ const updateProfileSchema = z.object({
     title: z.string().optional(),
     phoneNumber: z.string().optional(),
     location: z.string().optional(),
+    website: z.string().url().optional().or(z.literal('')),
+    skills: z.array(z.string()).optional(),
+    interests: z.array(z.string()).optional(),
     links: z.array(z.object({
         id: z.string(),
         platform: z.string(),

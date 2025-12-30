@@ -20,8 +20,9 @@ This platform serves as the central operational heartbeat of Prishtina Hackerspa
 - 💳 **Billing & Payments** - Membership fees, invoices, and payment tracking (Stripe integration)
 - 📧 **Communication** - Email verification, notifications, and announcements
 - 🔐 **Access Control** - Authentication, role-based permissions, and forensic audit logging
-- �️ **Security Intelligence** - Heuristic ML for threat detection and anomaly scores
-- �📄 **Document Management** - Membership agreements, waivers, and secured identity archives
+- 📦 **Inventory Control** - Bulk asset import (CSV/TSV/JSON), location tracking, and dynamic metadata
+- 🧠 **Security Intelligence** - Heuristic ML for threat detection and anomaly scores
+- 📄 **Document Management** - Membership agreements, waivers, and secured identity archives
 - 📊 **Analytics** - 7-day activity trends, security health baselines, and event distributions
 - ⚖️ **Legal Compliance** - Privacy policy, terms of service, and community code of conduct
 
@@ -97,6 +98,11 @@ The V2 release represents a comprehensive security overhaul of the PRHS platform
 - Forensic logging of document uploads, reviews, and status transitions
 - Integration with membership access gates (verified identity required for physical access)
 
+**6. Inventory Data Integrity**
+- **CSRF Protection**: All mutations (Add, Edit, Import, Delete) are secured with mandatory CSRF token validation.
+- **Dynamic Schema Isolation**: Unknown spreadsheet columns are automatically captured in a JSON `metadata` field, preventing data loss while maintaining core schema integrity.
+- **Input Sanitization**: Robust parsing for non-numeric quantity values and inconsistent CSV delimiters.
+
 ---
 
 ## 🗄️ Database Schema
@@ -107,35 +113,33 @@ The system uses MongoDB with Mongoose for data modeling. Here's the core schema 
 erDiagram
     USER ||--o{ PAYMENT : makes
     USER ||--o{ DOCUMENT : signs
+    USER ||--o{ INVENTORY_ITEM : manages
     USER {
         string id PK
         string email
         string[] secondaryEmails
-        string pendingEmail
         string name
         string role "ADMIN | STAFF | USER"
         boolean hasAccess
         string identificationStatus "NONE | PENDING | VERIFIED | REJECTED"
         datetime createdAt
-        string username
-        string bio
-        string title
+    }
+    INVENTORY_ITEM {
+        string id PK
+        string name
+        string manufacturer
+        string category
         string location
-        string phoneNumber
-        object[] links
-        datetime emailVerified
-        string verificationToken
-        datetime verificationTokenExpires
+        integer quantity
+        object metadata "Dynamic Columns"
+        datetime updatedAt
     }
     PAYMENT {
         string id PK
         string userId FK
         float amount
         string status "PENDING | COMPLETED | FAILED"
-        string method
         datetime createdAt
-        string stripePaymentId
-        string invoiceUrl
     }
     DOCUMENT {
         string id PK
@@ -143,7 +147,6 @@ erDiagram
         string type "MEMBERSHIP_AGREEMENT | WAIVER"
         boolean isSigned
         datetime signedAt
-        string fileUrl
     }
 ```
 
@@ -171,6 +174,7 @@ graph TB
         E[Payment Processing]
         F[Document Handling]
         G[Audit Logging]
+        K[Inventory Control]
     end
     
     subgraph "Data Layer"
@@ -657,6 +661,46 @@ Remove secondary email.
 ```
 
 **Response:** `200 OK`
+
+### 📦 Inventory Management
+
+#### `GET /api/v2/GET/inventory`
+Fetch paginated inventory items with filtering and search.
+
+**Auth:** Required
+
+**Query Params:**
+- `page`: Page number (default: 1)
+- `limit`: Items per page (default: 50)
+- `query`: Text search query
+- `category`: Filter by category
+
+**Response:** `200 OK`
+```json
+{
+  "items": [...],
+  "pagination": {
+    "total": 125,
+    "page": 1,
+    "totalPages": 3
+  }
+}
+```
+
+#### `POST /api/v2/POST/inventory/import`
+Bulk import items from JSON or Spreadsheet data.
+
+**Auth:** Admin/Staff
+
+**Security:** CSRF Required
+
+**Request:** `Array<InventoryObject>`
+
+**Features:**
+- Captured dynamic columns into `metadata` field.
+- Auto-sanitizes non-numeric quantities to `0`.
+
+---
 
 ---
 

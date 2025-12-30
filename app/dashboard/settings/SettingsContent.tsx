@@ -30,6 +30,17 @@ import { Plus, X, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import { IdentityVerification } from "@/components/dashboard/IdentityVerification";
+import Cropper, { Point, Area } from "react-easy-crop";
+import getCroppedImg from "@/lib/image-utils";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Slider } from "@/components/ui/slider";
 
 import prohibitedConfig from "@/lib/prohibited-terms.json";
 
@@ -103,6 +114,14 @@ export function SettingsContent({ defaultTab }: SettingsContentProps) {
     const [changeEmailToken, setChangeEmailToken] = useState("");
     const [isVerifyingChange, setIsVerifyingChange] = useState(false);
     const [isIdentityEnabled, setIsIdentityEnabled] = useState(true);
+
+    // Cropping State
+    const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+    const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState(1);
+    const [rotation, setRotation] = useState(0);
+    const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+    const [isCropDialogOpen, setIsCropDialogOpen] = useState(false);
 
     // Prevent hydration mismatch for theme
     useEffect(() => {
@@ -452,7 +471,7 @@ export function SettingsContent({ defaultTab }: SettingsContentProps) {
 
     if (!mounted) return null;
 
-    const showIdentityTab = isIdentityEnabled && (user as any)?.identificationStatus !== 'VERIFIED';
+    const showIdentityTab = isIdentityEnabled;
 
     return (
         <div className="flex-1 space-y-4 p-8 pt-6">
@@ -484,8 +503,156 @@ export function SettingsContent({ defaultTab }: SettingsContentProps) {
                                     <AvatarImage src={user?.image || ""} />
                                     <AvatarFallback className="text-xl">{user?.name?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
                                 </Avatar>
-                                <Button variant="outline" size="sm">Change Avatar</Button>
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            type="file"
+                                            id="avatar-upload"
+                                            className="hidden"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+
+                                                const reader = new FileReader();
+                                                reader.onload = () => {
+                                                    setImageToCrop(reader.result as string);
+                                                    setIsCropDialogOpen(true);
+                                                };
+                                                reader.readAsDataURL(file);
+                                                // Reset input so the same file can be selected again
+                                                e.target.value = "";
+                                            }}
+                                        />
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => document.getElementById("avatar-upload")?.click()}
+                                            disabled={isLoading}
+                                        >
+                                            {isLoading ? "Uploading..." : "Change Avatar"}
+                                        </Button>
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground">
+                                        Max file size: 5MB. JPG, PNG, WEBP, or GIF.
+                                    </p>
+                                </div>
                             </div>
+
+                            {/* Image Cropper Dialog */}
+                            <Dialog open={isCropDialogOpen} onOpenChange={setIsCropDialogOpen}>
+                                <DialogContent className="sm:max-w-[500px] border-white/10 bg-zinc-900/95 backdrop-blur-xl p-0 overflow-hidden">
+                                    <DialogHeader className="p-6 pb-0">
+                                        <DialogTitle className="text-xl font-bold">Edit Profile Picture</DialogTitle>
+                                        <DialogDescription className="text-zinc-400">
+                                            Zoom and drag to position your photo.
+                                        </DialogDescription>
+                                    </DialogHeader>
+
+                                    <div className="relative h-[350px] w-full bg-zinc-950 mt-4">
+                                        {imageToCrop && (
+                                            <Cropper
+                                                image={imageToCrop}
+                                                crop={crop}
+                                                zoom={zoom}
+                                                rotation={rotation}
+                                                aspect={1}
+                                                cropShape="round"
+                                                showGrid={false}
+                                                onCropChange={setCrop}
+                                                onZoomChange={setZoom}
+                                                onRotationChange={setRotation}
+                                                onCropComplete={(_, pixels) => setCroppedAreaPixels(pixels)}
+                                            />
+                                        )}
+                                    </div>
+
+                                    <div className="p-6 space-y-6">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-4">
+                                                <span className="text-xs font-medium text-zinc-500 w-12">Zoom</span>
+                                                <Slider
+                                                    value={[zoom]}
+                                                    min={1}
+                                                    max={3}
+                                                    step={0.1}
+                                                    onValueChange={(vals) => setZoom(vals[0])}
+                                                    className="flex-1"
+                                                />
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <span className="text-xs font-medium text-zinc-500 w-12">Rotate</span>
+                                                <Slider
+                                                    value={[rotation]}
+                                                    min={0}
+                                                    max={360}
+                                                    step={1}
+                                                    onValueChange={(vals) => setRotation(vals[0])}
+                                                    className="flex-1"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <DialogFooter className="flex gap-2">
+                                            <Button variant="ghost" onClick={() => setIsCropDialogOpen(false)} className="rounded-xl">
+                                                Cancel
+                                            </Button>
+                                            <Button
+                                                onClick={async () => {
+                                                    if (!imageToCrop || !croppedAreaPixels) return;
+
+                                                    setIsLoading(true);
+                                                    setIsCropDialogOpen(false);
+
+                                                    try {
+                                                        const croppedBlob = await getCroppedImg(
+                                                            imageToCrop,
+                                                            croppedAreaPixels,
+                                                            rotation
+                                                        );
+
+                                                        if (!croppedBlob) throw new Error("Failed to process image");
+
+                                                        const formData = new FormData();
+                                                        formData.append("file", croppedBlob, "profile-picture.jpg");
+
+                                                        const csrfToken = await getCsrfToken();
+                                                        const res = await fetch("/api/v2/POST/auth/profile/image", {
+                                                            method: "POST",
+                                                            headers: {
+                                                                "X-CSRF-Token": csrfToken || "",
+                                                            },
+                                                            body: formData,
+                                                        });
+
+                                                        const data = await res.json();
+                                                        if (!res.ok) throw new Error(data.error || "Failed to upload image");
+
+                                                        toast({
+                                                            title: "Success",
+                                                            description: "Profile picture updated successfully!",
+                                                        });
+
+                                                        window.location.reload();
+                                                    } catch (error: any) {
+                                                        toast({
+                                                            title: "Error",
+                                                            description: error.message,
+                                                            variant: "destructive",
+                                                        });
+                                                    } finally {
+                                                        setIsLoading(false);
+                                                    }
+                                                }}
+                                                className="rounded-xl px-8 shadow-lg shadow-primary/20"
+                                                disabled={isLoading}
+                                            >
+                                                {isLoading ? "Saving..." : "Apply & Save"}
+                                            </Button>
+                                        </DialogFooter>
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
 
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div className="space-y-2">

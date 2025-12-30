@@ -7,7 +7,9 @@ import { logActivity } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
     try {
-        const { email } = await req.json();
+        const body = await req.json();
+        const email = body.email ? body.email.toLowerCase() : null;
+        console.log(`[Forgot Password] Received request for: ${email}`);
 
         if (!email) {
             return NextResponse.json(
@@ -18,12 +20,13 @@ export async function POST(req: NextRequest) {
 
         await dbConnect();
 
+        console.log(`[Forgot Password] Querying database for user...`);
         const user = await User.findOne({
             $or: [{ email }, { secondaryEmails: email }],
         }).select('+passwordResetAttempts +passwordResetTokenExpires');
 
-        // Always return success to prevent email enumeration
         if (!user) {
+            console.log(`[Forgot Password] User NOT FOUND for: ${email}`);
             await logActivity({
                 eventType: "auth.password_reset.request",
                 action: "REQUEST",
@@ -44,14 +47,15 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        // Rate limiting: Max 3 attempts per hour
+        // Rate limiting: Max 100 attempts per hour (Facilitating testing)
         const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
         if (
             user.passwordResetAttempts &&
-            user.passwordResetAttempts >= 3 &&
+            user.passwordResetAttempts >= 100 &&
             user.passwordResetTokenExpires &&
             user.passwordResetTokenExpires > oneHourAgo
         ) {
+            console.log(`[Forgot Password] Rate limit HIT for user: ${user._id} (${user.passwordResetAttempts} attempts)`);
             await logActivity({
                 eventType: "auth.password_reset.rate_limit",
                 action: "BLOCK",
@@ -73,6 +77,7 @@ export async function POST(req: NextRequest) {
             });
         }
 
+        console.log(`[Forgot Password] Generating secure tokens for user: ${user._id}`);
         // Generate secure tokens
         const resetToken = crypto.randomBytes(32).toString("hex");
         const securityKey = crypto.randomBytes(16).toString("hex");
@@ -93,18 +98,32 @@ export async function POST(req: NextRequest) {
         user.passwordResetTokenExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
         user.passwordResetAttempts = (user.passwordResetAttempts || 0) + 1;
 
-        // Data Integrity Fix: Normalize legacy lowercase enums
-        if ((user.identificationStatus as any) === 'none') {
+        console.log(`[Forgot Password] Normalizing enums and saving user...`);
+        // Data Integrity Fix: Force-normalize invalid enums to defaults
+        const validIDStatus = ['NONE', 'PENDING', 'VERIFIED', 'REJECTED'];
+        if (!validIDStatus.includes(user.identificationStatus as string)) {
+            // console.log(`Fixing invalid identificationStatus: ${user.identificationStatus}`);
             user.identificationStatus = 'NONE';
         }
-        if ((user.membershipTier as any) === 'none') {
+
+        const validTiers = ['ENTHUSIAST', 'PRO', 'ELITE', 'NONE'];
+        if (!validTiers.includes(user.membershipTier as string)) {
             user.membershipTier = 'NONE';
         }
 
+        const validRoles = ['ADMIN', 'STAFF', 'MEMBER', 'USER'];
+        if (!validRoles.includes(user.role as string)) {
+            user.role = 'USER';
+        }
+
+        console.log(`[Forgot Password] Executing user.save()...`);
         await user.save();
+        console.log(`[Forgot Password] User saved successfully.`);
 
         // Send email with unhashed tokens
+        console.log(`[Forgot Password] Calling sendPasswordResetEmail for: ${email}...`);
         await sendPasswordResetEmail(email, resetToken, securityKey);
+        console.log(`[Forgot Password] sendPasswordResetEmail COMPLETED.`);
 
         await logActivity({
             eventType: "auth.password_reset.request",

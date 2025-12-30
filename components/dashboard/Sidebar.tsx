@@ -18,7 +18,8 @@ import {
     ClipboardList,
     ShieldCheck,
     Code,
-    Stars
+    Stars,
+    Package
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut, useSession } from "next-auth/react";
@@ -94,6 +95,11 @@ const adminSidebarItems = [
         title: "System Stats",
         href: "/dashboard/admin/stats",
         icon: BarChart,
+    },
+    {
+        title: "Inventory",
+        href: "/dashboard/admin/inventory",
+        icon: Package,
     },
 ];
 

@@ -2,12 +2,19 @@ const nodemailer = require('nodemailer');
 
 // Create a transporter function to ensure it's created at runtime
 const getTransporter = () => {
+    const host = process.env.EMAIL_SERVER_HOST || process.env.EMAIL_HOST;
+    const user = process.env.EMAIL_SERVER_USER || process.env.EMAIL_USER;
+
+    console.log(`[Email Debug] Initializing Transporter`);
+    console.log(`[Email Debug] Host: ${host}`);
+    console.log(`[Email Debug] User: ${user}`);
+
     return nodemailer.createTransport({
-        host: process.env.EMAIL_SERVER_HOST || process.env.EMAIL_HOST,
+        host: host,
         port: parseInt(process.env.EMAIL_SERVER_PORT || process.env.EMAIL_PORT || '587'),
         secure: false,
         auth: {
-            user: process.env.EMAIL_SERVER_USER || process.env.EMAIL_USER,
+            user: user,
             pass: process.env.EMAIL_SERVER_PASSWORD || process.env.EMAIL_PASSWORD,
         },
     });
@@ -20,7 +27,11 @@ export async function sendPasswordResetEmail(
     resetToken: string,
     securityKey: string
 ) {
-    const resetUrl = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${resetToken}&key=${securityKey}`;
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const resetUrl = `${baseUrl}/auth/reset-password?token=${resetToken}&key=${securityKey}`;
+
+    console.log(`[Email] Generating reset email for ${email}`);
+    console.log(`[Email] Reset URL: ${resetUrl}`);
 
     const mailOptions = {
         from: process.env.EMAIL_FROM || 'noreply@flossk.org',
@@ -113,5 +124,12 @@ export async function sendPasswordResetEmail(
         `,
     };
 
-    await getTransporter().sendMail(mailOptions);
+    try {
+        console.log(`[Email Debug] Attempting to send mail to ${email}...`);
+        const info = await getTransporter().sendMail(mailOptions);
+        console.log(`[Email Debug] Mail sent successfully. MessageId: ${info.messageId}`);
+    } catch (error) {
+        console.error(`[Email Debug] Failed to send mail:`, error);
+        throw error; // Re-throw to start controller handling
+    }
 }

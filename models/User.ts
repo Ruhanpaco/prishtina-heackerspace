@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export interface IUser extends Document {
     // Identity
@@ -76,6 +77,9 @@ export interface IUser extends Document {
     passwordResetSecurityKey?: string; // Additional security layer
     passwordResetAttempts?: number;
     lastPasswordResetAt?: Date;
+
+    points: number; // Contribution points / XP
+    level: number;  // Calculated level
 
     lastLogin?: Date;
     lastLoginIP?: string;
@@ -172,6 +176,9 @@ const UserSchema: Schema<IUser> = new Schema(
         passwordResetSecurityKey: { type: String, select: false },
         passwordResetAttempts: { type: Number, default: 0 },
         lastPasswordResetAt: { type: Date },
+
+        points: { type: Number, default: 0 },
+        level: { type: Number, default: 1 },
 
         lastLogin: { type: Date },
         lastLoginIP: { type: String, select: false },
