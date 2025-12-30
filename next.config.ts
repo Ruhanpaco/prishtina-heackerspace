@@ -3,6 +3,15 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   serverExternalPackages: ['mongoose', 'bcryptjs'],
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'prhs-bata.ruhanpacolli.online',
+        pathname: '/assets/images/logos/**',
+      },
+    ],
+  },
   async headers() {
     return [
       {
@@ -18,7 +27,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests;",
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://prhs-bata.ruhanpacolli.online; font-src 'self'; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests;",
           },
           {
             key: 'X-Content-Type-Options',
