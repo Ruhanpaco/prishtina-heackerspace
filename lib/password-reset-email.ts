@@ -1,14 +1,17 @@
-import nodemailer from 'nodemailer';
+const nodemailer = require('nodemailer');
 
-const transporter = nodemailer.createTransporter({
-    host: process.env.EMAIL_HOST,
-    port: parseInt(process.env.EMAIL_PORT || '587'),
-    secure: false,
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
-    },
-});
+// Create a transporter function to ensure it's created at runtime
+const getTransporter = () => {
+    return nodemailer.createTransporter({
+        host: process.env.EMAIL_HOST,
+        port: parseInt(process.env.EMAIL_PORT || '587'),
+        secure: false,
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASSWORD,
+        },
+    });
+};
 
 const FLOSSK_LOGO_URL = 'https://prhs-bata.ruhanpacolli.online/assets/images/logos/FLOSSK%20Logo%20Black.png';
 
@@ -110,5 +113,5 @@ export async function sendPasswordResetEmail(
         `,
     };
 
-    await transporter.sendMail(mailOptions);
+    await getTransporter().sendMail(mailOptions);
 }
