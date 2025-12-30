@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { useActionState } from "react";
 import { FaEnvelope, FaLock, FaGithub, FaGoogle, FaArrowRight } from "react-icons/fa";
@@ -77,9 +78,9 @@ export function SignInContent() {
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-[3px]">
                                     Password
                                 </label>
-                                <a href="/auth/forgot-password" className="text-[10px] text-brand-yellow/60 hover:text-brand-yellow transition-colors font-black uppercase tracking-wider">
+                                <Link href="/auth/forgot-password" className="text-[10px] text-brand-yellow/60 hover:text-brand-yellow transition-colors font-black uppercase tracking-wider">
                                     Forgot?
-                                </a>
+                                </Link>
                             </div>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-brand-yellow transition-colors">
