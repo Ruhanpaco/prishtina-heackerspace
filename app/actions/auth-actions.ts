@@ -17,7 +17,8 @@ export async function authenticate(
     }
 
     try {
-        await signIn("credentials", formData);
+        // Use validated data instead of raw formData
+        await signIn("credentials", validation.data);
     } catch (error) {
         if (error instanceof AuthError) {
             switch (error.type) {

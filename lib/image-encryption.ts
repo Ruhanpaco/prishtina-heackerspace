@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 
 const ALGORITHM = 'aes-256-gcm';
 const KEY_BASE64 = process.env.IMAGE_ENCRYPTION_KEY!;

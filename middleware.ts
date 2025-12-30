@@ -1,14 +1,19 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import NextAuth from "next-auth";
+import { authConfig } from "@/lib/auth.config";
+import { NextResponse, type NextRequest } from "next/server";
+import { getSecureIP } from "@/lib/ip-utils";
 
-// In-memory rate limiting (for production, use Redis/Upstash)
+// Initialize NextAuth
+const { auth } = NextAuth(authConfig);
+
+// In-memory rate limiting (Per-lambda instance)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
 // Rate limiting configuration
 const RATE_LIMITS = {
-    api: { requests: 100, window: 60000 }, // 100 requests per minute for API
-    auth: { requests: 5, window: 60000 },  // 5 requests per minute for auth endpoints
-    general: { requests: 200, window: 60000 } // 200 requests per minute for general pages
+    api: { requests: 100, window: 60000 },
+    auth: { requests: 10, window: 60000 },
+    general: { requests: 200, window: 60000 }
 };
 
 // Security headers
@@ -19,38 +24,44 @@ const SECURITY_HEADERS = {
     'X-Content-Type-Options': 'nosniff',
     'X-XSS-Protection': '1; mode=block',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
-    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()',
 };
 
-function getClientIP(request: NextRequest): string {
-    return request.headers.get('x-forwarded-for')?.split(',')[0] ||
-        request.headers.get('x-real-ip') ||
-        'unknown';
+// Content Security Policy
+function getCSP() {
+    // strict-dynamic would be better with nonces, but 'unsafe-inline' is often needed for Tailwind/Nextjs in 'dev' unless configured strictly
+    // We allow 'unsafe-eval' in dev for hot reloading, block in prod ideally.
+    // For this implementation, we use a balanced policy.
+    const isProd = process.env.NODE_ENV === 'production';
+
+    // Note: Next.js images often data: blobs.
+    return [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com", // unsafe-eval often needed for Next.js dev
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "img-src 'self' data: https://blob: https://*.googleusercontent.com", // Google Auth images
+        "font-src 'self' https://fonts.gstatic.com",
+        "connect-src 'self' https://vitals.vercel-insights.com", // Vercel Analytics
+        "frame-ancestors 'none'",
+        "upgrade-insecure-requests"
+    ].join('; ');
 }
 
 function checkRateLimit(ip: string, path: string): boolean {
     const now = Date.now();
-
-    // Determine rate limit based on path
     let limit = RATE_LIMITS.general;
-    if (path.startsWith('/api/v1/auth')) {
-        limit = RATE_LIMITS.auth;
-    } else if (path.startsWith('/api')) {
-        limit = RATE_LIMITS.api;
-    }
+    if (path.startsWith('/api/v2/POST/auth') || path.startsWith('/api/v2/PATCH/auth')) limit = RATE_LIMITS.auth;
+    else if (path.startsWith('/api')) limit = RATE_LIMITS.api;
 
     const key = `${ip}:${path.split('/')[1] || 'root'}`;
     const record = rateLimitMap.get(key);
 
     if (!record || now > record.resetTime) {
-        // Reset or create new record
         rateLimitMap.set(key, { count: 1, resetTime: now + limit.window });
         return true;
     }
 
-    if (record.count >= limit.requests) {
-        return false; // Rate limit exceeded
-    }
+    if (record.count >= limit.requests) return false;
 
     record.count++;
     return true;
@@ -58,94 +69,91 @@ function checkRateLimit(ip: string, path: string): boolean {
 
 function detectSuspiciousActivity(request: NextRequest): boolean {
     const userAgent = request.headers.get('user-agent') || '';
+    const suspiciousPatterns = [/curl/i, /wget/i, /python-requests/i, /scrapy/i];
+    const allowedBots = [/googlebot/i, /bingbot/i, /slackbot/i, /twitterbot/i];
 
-    // Block known bad bots (basic check)
-    const suspiciousPatterns = [
-        /curl/i,
-        /wget/i,
-        /python-requests/i,
-        /scrapy/i,
-    ];
-
-    // Allow legitimate bots (Google, Bing, etc.)
-    const allowedBots = [
-        /googlebot/i,
-        /bingbot/i,
-        /slackbot/i,
-        /twitterbot/i,
-        /facebookexternalhit/i
-    ];
-
-    const isSuspicious = suspiciousPatterns.some(pattern => pattern.test(userAgent));
-    const isAllowed = allowedBots.some(pattern => pattern.test(userAgent));
-
+    const isSuspicious = suspiciousPatterns.some(p => p.test(userAgent));
+    const isAllowed = allowedBots.some(p => p.test(userAgent));
     return isSuspicious && !isAllowed;
 }
 
-export function middleware(request: NextRequest) {
-    const { pathname } = request.nextUrl;
-    const ip = getClientIP(request);
+// Whitelisted public API routes
+const PUBLIC_API_ROUTES = [
+    '/api/v2/POST/auth/login',
+    '/api/v2/POST/auth/signup',
+];
 
-    // 1. Security Headers
+// Methods that require CSRF protection
+const MUTATION_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
+
+export default auth(async function middleware(req) {
+    const { pathname } = req.nextUrl;
+    const ip = getSecureIP(req);
+
+    // 1. Rate Limiting
+    if (!checkRateLimit(ip, pathname)) {
+        return new NextResponse(
+            JSON.stringify({ error: 'Too many requests' }),
+            { status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': '60' } }
+        );
+    }
+
+    // 2. Security Headers & CSP
     const response = NextResponse.next();
     Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
         response.headers.set(key, value);
     });
+    response.headers.set('Content-Security-Policy', getCSP());
 
-    // 2. Rate Limiting
-    if (!checkRateLimit(ip, pathname)) {
-        return new NextResponse(
-            JSON.stringify({ error: 'Too many requests. Please try again later.' }),
-            {
-                status: 429,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Retry-After': '60',
-                    ...SECURITY_HEADERS
+    // 3. API V2 Protection (Default Deny)
+    if (pathname.startsWith('/api/v2')) {
+        // Skip auth check for whitelisted routes
+        if (!PUBLIC_API_ROUTES.some(route => pathname.startsWith(route))) {
+            const hasApiKey = req.headers.has('x-api-key');
+            const hasAuthHeader = req.headers.has('authorization');
+            const session = req.auth;
+
+            // Reject if no credential present at all
+            if (!session && !hasApiKey && !hasAuthHeader) {
+                return new NextResponse(
+                    JSON.stringify({ error: 'Authentication required' }),
+                    { status: 401, headers: { 'Content-Type': 'application/json' } }
+                );
+            }
+
+            // 4. CSRF Protection for Session-based mutations
+            if (session && MUTATION_METHODS.includes(req.method)) {
+                const csrfToken = req.headers.get('x-csrf-token');
+                if (!csrfToken) {
+                    return new NextResponse(
+                        JSON.stringify({ error: 'CSRF token missing' }),
+                        { status: 403, headers: { 'Content-Type': 'application/json' } }
+                    );
                 }
             }
-        );
-    }
+        }
 
-    // 3. Bot Detection (only for sensitive endpoints)
-    if (pathname.startsWith('/api/v1/auth') && detectSuspiciousActivity(request)) {
-        return new NextResponse(
-            JSON.stringify({ error: 'Forbidden' }),
-            {
-                status: 403,
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...SECURITY_HEADERS
-                }
-            }
-        );
-    }
+        // 5. CORS Enforcement
+        const origin = req.headers.get('origin');
+        const allowedOrigin = process.env.NEXTAUTH_URL;
 
-    // 4. CORS for API routes (if needed for external access)
-    if (pathname.startsWith('/api')) {
-        response.headers.set('Access-Control-Allow-Credentials', 'true');
-        response.headers.set('Access-Control-Allow-Origin', process.env.NEXTAUTH_URL || '*');
-        response.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
-        response.headers.set('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
+        if (origin && allowedOrigin && origin === allowedOrigin) {
+            response.headers.set('Access-Control-Allow-Credentials', 'true');
+            response.headers.set('Access-Control-Allow-Origin', origin);
+            response.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
+            response.headers.set('Access-Control-Allow-Headers', 'X-CSRF-Token, X-API-KEY, Authorization, Content-Type');
+        }
 
-        // Handle preflight requests
-        if (request.method === 'OPTIONS') {
+        if (req.method === 'OPTIONS') {
             return new NextResponse(null, { status: 200, headers: response.headers });
         }
     }
 
     return response;
-}
+});
 
 export const config = {
     matcher: [
-        /*
-         * Match all request paths except:
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         * - public folder
-         */
         '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
     ],
 };

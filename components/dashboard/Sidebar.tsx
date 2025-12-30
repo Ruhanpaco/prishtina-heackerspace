@@ -12,9 +12,16 @@ import {
     MapPin,
     Settings,
     LogOut,
+    ShieldAlert,
+    CreditCard,
+    BarChart,
+    ClipboardList,
+    ShieldCheck,
+    Code,
+    Stars
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 
 const sidebarItems = [
     {
@@ -31,16 +38,19 @@ const sidebarItems = [
         title: "Projects",
         href: "/dashboard/projects",
         icon: Folder,
+        memberOnly: true
     },
     {
         title: "Community",
         href: "/dashboard/community",
         icon: Users,
+        memberOnly: true
     },
     {
         title: "Presence",
         href: "/dashboard/presence",
         icon: MapPin,
+        memberOnly: true
     },
     {
         title: "Settings",
@@ -49,8 +59,51 @@ const sidebarItems = [
     },
 ];
 
+const adminSidebarItems = [
+    {
+        title: "User Management",
+        href: "/dashboard/admin/users",
+        icon: Users,
+    },
+    {
+        title: "Identity Review",
+        href: "/dashboard/admin/identity",
+        icon: ShieldCheck,
+    },
+    {
+        title: "Payments",
+        href: "/dashboard/admin/payments",
+        icon: CreditCard,
+    },
+    {
+        title: "Audit Logs",
+        href: "/dashboard/admin/logs",
+        icon: ClipboardList,
+    },
+    {
+        title: "Security Intel",
+        href: "/dashboard/admin/logs/analytics",
+        icon: ShieldAlert,
+    },
+    {
+        title: "API Docs",
+        href: "/dashboard/admin/docs",
+        icon: Code,
+    },
+    {
+        title: "System Stats",
+        href: "/dashboard/admin/stats",
+        icon: BarChart,
+    },
+];
+
 export function Sidebar() {
     const pathname = usePathname();
+    const { data: session } = useSession();
+    const userRole = session?.user?.role;
+    const isMember = (session?.user as any)?.membershipStatus === 'ACTIVE';
+
+    const visibleItems = sidebarItems.filter(item => !item.memberOnly || isMember);
 
     return (
         <div className="flex flex-col h-full border-r bg-card text-card-foreground w-64 shadow-md z-10">
@@ -66,7 +119,7 @@ export function Sidebar() {
                 </Link>
             </div>
             <div className="flex-1 py-6 px-3 space-y-1">
-                {sidebarItems.map((item) => (
+                {visibleItems.map((item) => (
                     <Link
                         key={item.href}
                         href={item.href}
@@ -81,6 +134,46 @@ export function Sidebar() {
                         {item.title}
                     </Link>
                 ))}
+
+                {!isMember && (
+                    <div className="mt-6 px-3">
+                        <Button
+                            variant="default"
+                            className="w-full bg-gradient-to-r from-brand-yellow to-yellow-600 text-brand-dark font-bold border-none hover:shadow-lg transition-all"
+                            asChild
+                        >
+                            <Link href="/dashboard/membership/pricing">
+                                <Stars className="h-4 w-4 mr-2" />
+                                Become a Member
+                            </Link>
+                        </Button>
+                    </div>
+                )}
+
+                {(userRole === 'ADMIN' || userRole === 'STAFF') && (
+                    <>
+                        <div className="pt-8 pb-2 px-3">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+                                Administration
+                            </p>
+                        </div>
+                        {adminSidebarItems.map((item) => (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={cn(
+                                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
+                                    pathname === item.href
+                                        ? "bg-brand-yellow text-brand-dark shadow-sm translate-x-1"
+                                        : "hover:bg-accent hover:text-accent-foreground hover:translate-x-1"
+                                )}
+                            >
+                                <item.icon className="h-4 w-4" />
+                                {item.title}
+                            </Link>
+                        ))}
+                    </>
+                )}
             </div>
             <div className="p-4 border-t bg-muted/20">
                 <Button
@@ -92,6 +185,6 @@ export function Sidebar() {
                     Sign Out
                 </Button>
             </div>
-        </div>
+        </div >
     );
 }

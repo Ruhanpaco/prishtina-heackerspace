@@ -116,7 +116,7 @@ export default function TermsOfServicePage() {
                             </p>
 
                             <p className="text-sm">
-                                <strong>Vandalism and Property Damage:</strong> Intentional damage, destruction, or defacement of hackerspace equipment, infrastructure, or property is a criminal offense under Article 390 of the Criminal Code of Kosovo. This includes, but is not limited to, deliberately breaking equipment, damaging walls or furniture, destroying other members' projects, or any other act of willful destruction. Immediate consequences include RFID deactivation, account suspension, police report, financial liability for repair or replacement costs (which may exceed €1,000 for specialized equipment), and permanent ban. Accidental damage must be reported immediately; concealing accidental damage will be treated as intentional vandalism.
+                                <strong>Vandalism and Property Damage:</strong> Intentional damage, destruction, or defacement of hackerspace equipment, infrastructure, or property is a criminal offense under Article 390 of the Criminal Code of Kosovo. This includes, but is not limited to, deliberately breaking equipment, damaging walls or furniture, destroying other members&apos; projects, or any other act of willful destruction. Immediate consequences include RFID deactivation, account suspension, police report, financial liability for repair or replacement costs (which may exceed €1,000 for specialized equipment), and permanent ban. Accidental damage must be reported immediately; concealing accidental damage will be treated as intentional vandalism.
                             </p>
 
                             <p className="text-sm">

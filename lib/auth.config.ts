@@ -8,30 +8,34 @@ export const authConfig = {
         strategy: "jwt",
         maxAge: 4 * 60 * 60, // 4 hours
     },
-    cookies: {
-        sessionToken: {
-            name: `next-auth.session-token`,
-            options: {
-                httpOnly: true,
-                sameSite: 'lax',
-                path: '/',
-                secure: process.env.NODE_ENV === 'production',
-            },
-        },
-    },
+    // Cookie configuration removed to rely on secure defaults
     callbacks: {
         // These callbacks must be Edge compatible (no DB calls)
         async jwt({ token, user }) {
             if (user) {
-                token.role = user.role;
                 token.id = user.id;
+                token.username = user.username;
+                token.role = user.role;
+                token.image = user.image;
+                token.bio = user.bio;
+                token.title = user.title;
+                token.membershipStatus = user.membershipStatus;
+                token.membershipTier = user.membershipTier;
+                token.identificationStatus = user.identificationStatus;
             }
             return token;
         },
         async session({ session, token }) {
             if (token && session.user) {
                 session.user.id = token.id as string;
+                session.user.username = token.username as string;
                 session.user.role = token.role as string;
+                session.user.image = token.image as string | undefined;
+                session.user.bio = token.bio as string | undefined;
+                session.user.title = token.title as string | undefined;
+                session.user.membershipStatus = token.membershipStatus as string;
+                session.user.membershipTier = token.membershipTier as string;
+                session.user.identificationStatus = token.identificationStatus as string;
             }
             return session;
         },

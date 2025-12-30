@@ -8,6 +8,7 @@ export interface IUser extends Document {
     secondaryEmails: string[];
     pendingEmail?: string;
     password?: string;
+    apiKey?: string;
     image?: string;
 
     // Profile
@@ -34,6 +35,10 @@ export interface IUser extends Document {
     // Membership & Access
     role: 'ADMIN' | 'STAFF' | 'MEMBER' | 'USER';
     membershipStatus: 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'SUSPENDED';
+    membershipTier: 'ENTHUSIAST' | 'PRO' | 'ELITE' | 'NONE';
+    membershipExpiresAt?: Date;
+    identificationStatus: 'NONE' | 'PENDING' | 'VERIFIED' | 'REJECTED';
+    identityRejectionReason?: string;
     hasAccess: boolean; // Door access control
     rfidTag?: string;   // Physical card ID (Legacy)
     rfidUid?: string;   // Physical RFID Card UID
@@ -60,17 +65,6 @@ export interface IUser extends Document {
         uploadedAt: Date;
     };
 
-    // Encrypted Document Storage
-    documents: {
-        type: 'ID_CARD' | 'PASSPORT' | 'DRIVER_LICENSE' | 'OTHER';
-        name: string;
-        data: string; // Encrypted base64
-        iv: string;
-        authTag: string;
-        uploadedAt: Date;
-        verifiedAt?: Date;
-    }[];
-
     uuid?: string;
     emailVerified?: Date;
     verificationToken?: string;
@@ -91,6 +85,7 @@ const UserSchema: Schema<IUser> = new Schema(
         secondaryEmails: { type: [String], default: [] },
         pendingEmail: { type: String, trim: true, lowercase: true, select: false },
         password: { type: String, select: false }, // Do not return password by default
+        apiKey: { type: String, unique: true, sparse: true, select: false }, // Non-selectable API Key
         image: { type: String },
 
         // Profile
@@ -124,9 +119,13 @@ const UserSchema: Schema<IUser> = new Schema(
         // Membership & Access
         role: { type: String, enum: ['ADMIN', 'STAFF', 'MEMBER', 'USER'], default: 'USER' },
         membershipStatus: { type: String, enum: ['ACTIVE', 'INACTIVE', 'PENDING', 'SUSPENDED'], default: 'PENDING' },
+        membershipTier: { type: String, enum: ['ENTHUSIAST', 'PRO', 'ELITE', 'NONE'], default: 'NONE' },
+        membershipExpiresAt: { type: Date },
+        identificationStatus: { type: String, enum: ['NONE', 'PENDING', 'VERIFIED', 'REJECTED'], default: 'NONE' },
+        identityRejectionReason: { type: String },
         hasAccess: { type: Boolean, default: false },
-        rfidTag: { type: String, sparse: true, unique: true }, // Sparse allows null/undefined to be non-unique
-        rfidUid: { type: String, sparse: true, unique: true },
+        rfidTag: { type: String, sparse: true, unique: true, select: false }, // Sparse allows null/undefined to be non-unique
+        rfidUid: { type: String, sparse: true, unique: true, select: false },
         rfidApiKey: { type: String, select: false },
         isCheckedIn: { type: Boolean, default: false },
         lastCheckIn: { type: Date },
@@ -154,28 +153,13 @@ const UserSchema: Schema<IUser> = new Schema(
             uploadedAt: { type: Date },
         },
 
-        // Encrypted Document Storage
-        documents: {
-            type: [{
-                type: { type: String, enum: ['ID_CARD', 'PASSPORT', 'DRIVER_LICENSE', 'OTHER'], required: true },
-                name: { type: String, required: true },
-                data: { type: String, required: true }, // Encrypted base64
-                iv: { type: String, required: true },
-                authTag: { type: String, required: true },
-                uploadedAt: { type: Date, default: Date.now },
-                verifiedAt: { type: Date },
-            }],
-            default: [],
-            select: false, // Don't return by default for security
-        },
-
         // System
         emailVerified: { type: Date },
         verificationToken: { type: String, select: false },
         verificationTokenExpires: { type: Date, select: false },
         lastLogin: { type: Date },
-        lastLoginIP: { type: String },
-        currentIP: { type: String },
+        lastLoginIP: { type: String, select: false },
+        currentIP: { type: String, select: false },
     },
     { timestamps: true }
 );

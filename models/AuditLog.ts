@@ -21,11 +21,24 @@ export interface IAuditLog extends Document {
     context?: {
         ip_address?: string;
         user_agent?: string;
+        os?: string;
+        browser?: string;
+        browser_version?: string;
+        cpu_arch?: string;
+        device_vendor?: string;
+        device_model?: string;
         country?: string;
         device_type?: string;
         session_id?: string;
         request_id?: string;
         trace_id?: string;
+    };
+
+    // Forensic Metadata
+    forensics?: {
+        fingerprint?: string;
+        bundle_id?: string;
+        hashing_algorithm?: string;
     };
 
     // Target (what it was done to)
@@ -82,15 +95,28 @@ const AuditLogSchema: Schema<IAuditLog> = new Schema(
             role: { type: String }
         },
 
-        // Context
+        // Context (Network & Device Telemetry)
         context: {
             ip_address: { type: String, required: true, index: true },
             user_agent: { type: String },
+            os: { type: String },
+            browser: { type: String },
+            browser_version: { type: String },
+            cpu_arch: { type: String },
+            device_vendor: { type: String },
+            device_model: { type: String },
             country: { type: String },
             device_type: { type: String },
             session_id: { type: String },
             request_id: { type: String },
             trace_id: { type: String }
+        },
+
+        // Forensic Metadata
+        forensics: {
+            fingerprint: { type: String, index: true },
+            bundle_id: { type: String }, // For linking multiple logs in one ceremony
+            hashing_algorithm: { type: String, default: 'sha256' }
         },
 
         // Target

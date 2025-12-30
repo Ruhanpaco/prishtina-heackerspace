@@ -1,38 +1,44 @@
-import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
+import { SignJWT, jwtVerify } from 'jose';
+import crypto from 'node:crypto';
 
 /**
  * RFID Security Utility
  * 
- * This utility handles the creation and verification of tokens stored on physical RFID cards.
- * The tokens are signed JWTs that contain a unique API Key.
- * 
- * For 'encryption', we use standard JWT signing, but we can also add a secondary 
- * layer of AES encryption if the physical card reader supports it.
+ * Handles creation and verification of tokens stored on physical RFID cards.
+ * Requirement: RFID_SECRET must be set in the environment.
  */
 
-const RFID_SECRET = process.env.RFID_SECRET || 'fallback-rfid-secret-highly-secure-123';
+const RFID_SECRET = process.env.RFID_SECRET;
+if (!RFID_SECRET) {
+    throw new Error("CRITICAL SECURITY ERROR: RFID_SECRET is not defined. Hardware authentication will fail.");
+}
+
+const key = new TextEncoder().encode(RFID_SECRET);
 
 interface RfidTokenPayload {
     apiKey: string;
-    iat: number;
+    iat?: number;
 }
 
 /**
- * Generates a signed token to be written to an RFID card.
- * @param apiKey The unique API key generated for this specific RFID card.
+ * Generates a signed token for an RFID card.
  */
-export function generateRfidToken(apiKey: string): string {
-    return jwt.sign({ apiKey }, RFID_SECRET, { noTimestamp: false });
+export async function generateRfidToken(apiKey: string): Promise<string> {
+    return await new SignJWT({ apiKey })
+        .setProtectedHeader({ alg: 'HS256' })
+        .setIssuedAt()
+        .sign(key);
 }
 
 /**
- * Verifies and decodes a token provided by an RFID reader.
- * @param token The raw token string from the RFID card.
+ * Verifies and decodes an RFID token.
  */
-export function verifyRfidToken(token: string): string | null {
+export async function verifyRfidToken(token: string): Promise<string | null> {
     try {
-        const decoded = jwt.verify(token, RFID_SECRET) as RfidTokenPayload;
+        const { payload } = await jwtVerify(token, key, {
+            algorithms: ['HS256'],
+        });
+        const decoded = payload as unknown as RfidTokenPayload;
         return decoded.apiKey;
     } catch (error) {
         console.error('RFID Token Verification Failed:', error);

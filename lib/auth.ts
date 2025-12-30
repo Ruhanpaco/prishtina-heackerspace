@@ -1,3 +1,4 @@
+import "server-only";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import dbConnect from "@/lib/mongodb/dbConnect";
@@ -19,10 +20,10 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
                 await dbConnect();
 
                 // 1. Extract IP
+                const { getSecureIP } = await import("@/lib/ip-utils");
                 let ip = "unknown";
                 if (request && request instanceof Request) {
-                    const forwarded = request.headers.get("x-forwarded-for");
-                    ip = forwarded ? forwarded.split(',')[0] : "unknown";
+                    ip = getSecureIP(request);
                 }
 
                 // 2. Basic Input Check
@@ -106,7 +107,14 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
                     id: user._id.toString(),
                     email: user.email,
                     name: user.name,
+                    username: user.username,
                     role: user.role,
+                    image: user.image,
+                    bio: user.bio,
+                    title: user.title,
+                    membershipStatus: user.membershipStatus,
+                    membershipTier: (user as any).membershipTier,
+                    identificationStatus: user.identificationStatus,
                 };
             },
         }),
