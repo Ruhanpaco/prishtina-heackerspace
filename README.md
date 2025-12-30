@@ -517,7 +517,7 @@ prhs/
 │   ├── Document.ts
 │   └── AuditLog.ts
 ├── types/                    # TypeScript type definitions
-└── middleware.ts             # Next.js middleware (auth protection)
+└── proxy.ts                  # Next.js proxy (auth/security layer)
 ```
 
 ---
