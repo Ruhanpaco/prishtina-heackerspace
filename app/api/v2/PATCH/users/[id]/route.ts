@@ -6,7 +6,7 @@ import { logActivity } from "@/lib/logger";
 
 export async function PATCH(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const auth = await authenticateAPI();
@@ -19,7 +19,7 @@ export async function PATCH(
             return NextResponse.json({ error: "Forbidden: Admin or Staff access required" }, { status: 403 });
         }
 
-        const { id } = params;
+        const { id } = await params;
         const updates = await req.json();
 
         // Security: Prevent certain fields from being updated via this endpoint
