@@ -77,7 +77,7 @@ export function SignInContent() {
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-[3px]">
                                     Password
                                 </label>
-                                <a href="#" className="text-[10px] text-brand-yellow/60 hover:text-brand-yellow transition-colors font-black uppercase tracking-wider">
+                                <a href="/auth/forgot-password" className="text-[10px] text-brand-yellow/60 hover:text-brand-yellow transition-colors font-black uppercase tracking-wider">
                                     Forgot?
                                 </a>
                             </div>

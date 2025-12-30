@@ -69,6 +69,14 @@ export interface IUser extends Document {
     emailVerified?: Date;
     verificationToken?: string;
     verificationTokenExpires?: Date;
+
+    // Password Reset (Dual-Factor Security)
+    passwordResetToken?: string;
+    passwordResetTokenExpires?: Date;
+    passwordResetSecurityKey?: string; // Additional security layer
+    passwordResetAttempts?: number;
+    lastPasswordResetAt?: Date;
+
     lastLogin?: Date;
     lastLoginIP?: string;
     currentIP?: string;
@@ -157,6 +165,14 @@ const UserSchema: Schema<IUser> = new Schema(
         emailVerified: { type: Date },
         verificationToken: { type: String, select: false },
         verificationTokenExpires: { type: Date, select: false },
+
+        // Password Reset (Dual-Factor Security)
+        passwordResetToken: { type: String, select: false },
+        passwordResetTokenExpires: { type: Date, select: false },
+        passwordResetSecurityKey: { type: String, select: false },
+        passwordResetAttempts: { type: Number, default: 0 },
+        lastPasswordResetAt: { type: Date },
+
         lastLogin: { type: Date },
         lastLoginIP: { type: String, select: false },
         currentIP: { type: String, select: false },
