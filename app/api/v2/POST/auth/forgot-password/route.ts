@@ -93,6 +93,14 @@ export async function POST(req: NextRequest) {
         user.passwordResetTokenExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
         user.passwordResetAttempts = (user.passwordResetAttempts || 0) + 1;
 
+        // Data Integrity Fix: Normalize legacy lowercase enums
+        if ((user.identificationStatus as any) === 'none') {
+            user.identificationStatus = 'NONE';
+        }
+        if ((user.membershipTier as any) === 'none') {
+            user.membershipTier = 'NONE';
+        }
+
         await user.save();
 
         // Send email with unhashed tokens
