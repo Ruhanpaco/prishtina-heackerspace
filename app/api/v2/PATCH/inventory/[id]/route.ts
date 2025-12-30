@@ -5,16 +5,17 @@ import InventoryItem from "@/models/InventoryItem";
 
 export async function PATCH(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params;
+
         const auth = await authenticateAPI();
         if (!auth || (auth.role !== 'ADMIN' && auth.role !== 'STAFF')) {
             return NextResponse.json({ message: "Forbidden" }, { status: 403 });
         }
 
         const body = await req.json();
-        const { id } = params;
 
         await dbConnect();
 

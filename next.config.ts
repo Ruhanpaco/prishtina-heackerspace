@@ -3,11 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
-    // Force the workspace root to be the current directory to fix Fast Refresh issues
-    // and avoid "multiple lockfiles" warning.
-    turbo: {
-      root: __dirname,
-    }
+    // Other experimental options can be added here
   } as any,
   serverExternalPackages: ['mongoose', 'bcryptjs'],
   images: {

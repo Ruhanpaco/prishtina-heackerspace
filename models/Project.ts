@@ -47,14 +47,13 @@ const ProjectSchema: Schema<IProject> = new Schema(
 );
 
 // Middleware to generate slug from name if not provided
-ProjectSchema.pre('validate', function (next) {
+ProjectSchema.pre('validate', async function () {
     if (this.name && !this.slug) {
         this.slug = this.name
             .toLowerCase()
             .replace(/[^\w ]+/g, '')
             .replace(/ +/g, '-');
     }
-    next();
 });
 
 const Project: Model<IProject> = mongoose.models.Project || mongoose.model<IProject>('Project', ProjectSchema);

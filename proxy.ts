@@ -29,19 +29,14 @@ const SECURITY_HEADERS = {
 
 // Content Security Policy
 function getCSP() {
-    // strict-dynamic would be better with nonces, but 'unsafe-inline' is often needed for Tailwind/Nextjs in 'dev' unless configured strictly
-    // We allow 'unsafe-eval' in dev for hot reloading, block in prod ideally.
-    // For this implementation, we use a balanced policy.
     const isProd = process.env.NODE_ENV === 'production';
-
-    // Note: Next.js images often data: blobs.
     return [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com", // unsafe-eval often needed for Next.js dev
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-        "img-src 'self' data: https://blob: https://*.googleusercontent.com", // Google Auth images
+        "img-src 'self' data: https://blob: https://*.googleusercontent.com",
         "font-src 'self' https://fonts.gstatic.com",
-        "connect-src 'self' https://vitals.vercel-insights.com", // Vercel Analytics
+        "connect-src 'self' https://vitals.vercel-insights.com",
         "frame-ancestors 'none'",
         "upgrade-insecure-requests"
     ].join('; ');
@@ -67,16 +62,6 @@ function checkRateLimit(ip: string, path: string): boolean {
     return true;
 }
 
-function detectSuspiciousActivity(request: NextRequest): boolean {
-    const userAgent = request.headers.get('user-agent') || '';
-    const suspiciousPatterns = [/curl/i, /wget/i, /python-requests/i, /scrapy/i];
-    const allowedBots = [/googlebot/i, /bingbot/i, /slackbot/i, /twitterbot/i];
-
-    const isSuspicious = suspiciousPatterns.some(p => p.test(userAgent));
-    const isAllowed = allowedBots.some(p => p.test(userAgent));
-    return isSuspicious && !isAllowed;
-}
-
 // Whitelisted public API routes
 const PUBLIC_API_ROUTES = [
     '/api/v2/POST/auth/login',
@@ -88,7 +73,7 @@ const PUBLIC_API_ROUTES = [
 // Methods that require CSRF protection
 const MUTATION_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
 
-export default auth(async function middleware(req) {
+export default auth(async function proxy(req) {
     const { pathname } = req.nextUrl;
     const ip = getSecureIP(req);
 
@@ -109,13 +94,11 @@ export default auth(async function middleware(req) {
 
     // 3. API V2 Protection (Default Deny)
     if (pathname.startsWith('/api/v2')) {
-        // Skip auth check for whitelisted routes
         if (!PUBLIC_API_ROUTES.some(route => pathname.startsWith(route))) {
             const hasApiKey = req.headers.has('x-api-key');
             const hasAuthHeader = req.headers.has('authorization');
             const session = req.auth;
 
-            // Reject if no credential present at all
             if (!session && !hasApiKey && !hasAuthHeader) {
                 return new NextResponse(
                     JSON.stringify({ error: 'Authentication required' }),
@@ -123,7 +106,6 @@ export default auth(async function middleware(req) {
                 );
             }
 
-            // 4. CSRF Protection for Session-based mutations
             if (session && MUTATION_METHODS.includes(req.method)) {
                 const csrfToken = req.headers.get('x-csrf-token');
                 if (!csrfToken) {
@@ -135,7 +117,6 @@ export default auth(async function middleware(req) {
             }
         }
 
-        // 5. CORS Enforcement
         const origin = req.headers.get('origin');
         const allowedOrigin = process.env.NEXTAUTH_URL;
 
