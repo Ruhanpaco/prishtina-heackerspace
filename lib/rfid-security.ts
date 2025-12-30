@@ -8,12 +8,13 @@ import crypto from 'node:crypto';
  * Requirement: RFID_SECRET must be set in the environment.
  */
 
-const RFID_SECRET = process.env.RFID_SECRET;
-if (!RFID_SECRET) {
-    throw new Error("CRITICAL SECURITY ERROR: RFID_SECRET is not defined. Hardware authentication will fail.");
+function getRfidSecret(): Uint8Array {
+    const RFID_SECRET = process.env.RFID_SECRET;
+    if (!RFID_SECRET) {
+        throw new Error("CRITICAL SECURITY ERROR: RFID_SECRET is not defined. Hardware authentication will fail.");
+    }
+    return new TextEncoder().encode(RFID_SECRET);
 }
-
-const key = new TextEncoder().encode(RFID_SECRET);
 
 interface RfidTokenPayload {
     apiKey: string;
@@ -24,6 +25,7 @@ interface RfidTokenPayload {
  * Generates a signed token for an RFID card.
  */
 export async function generateRfidToken(apiKey: string): Promise<string> {
+    const key = getRfidSecret();
     return await new SignJWT({ apiKey })
         .setProtectedHeader({ alg: 'HS256' })
         .setIssuedAt()
@@ -35,6 +37,7 @@ export async function generateRfidToken(apiKey: string): Promise<string> {
  */
 export async function verifyRfidToken(token: string): Promise<string | null> {
     try {
+        const key = getRfidSecret();
         const { payload } = await jwtVerify(token, key, {
             algorithms: ['HS256'],
         });
