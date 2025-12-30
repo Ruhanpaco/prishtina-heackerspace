@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Mail, ArrowLeft, CheckCircle2 } from "lucide-react";
 
 export default function ForgotPasswordContent() {
@@ -42,56 +45,40 @@ export default function ForgotPasswordContent() {
 
     if (success) {
         return (
-            <div className="relative min-h-screen flex items-center justify-center p-4 font-sans selection:bg-brand-yellow/30 overflow-hidden">
-                {/* Background Image with Overlay */}
-                <div className="absolute inset-0 z-0">
-                    <Image
-                        src="/assets/images/background/image.png"
-                        alt="Background"
-                        fill
-                        className="object-cover"
-                        priority
-                    />
-                    <div className="absolute inset-0 bg-[#1D1D1B]/80 backdrop-blur-[2px]" />
-                </div>
+            <div className="min-h-screen flex items-center justify-center bg-background p-4">
+                <div className="w-full max-w-sm space-y-6 text-center">
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+                        <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-500" />
+                    </div>
 
-                {/* Main Content Card */}
-                <div className="relative z-10 w-full max-w-[480px] group">
-                    {/* Glow effect */}
-                    <div className="absolute -inset-1 bg-gradient-to-r from-brand-yellow/20 rounded-[2rem] blur-xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
-
-                    <div className="relative flex flex-col items-center bg-[#1D1D1B] border border-white/10 rounded-[2rem] p-8 sm:p-12 shadow-2xl overflow-hidden text-center">
-                        <div className="mb-6 w-20 h-20 bg-brand-yellow/10 rounded-full flex items-center justify-center mx-auto">
-                            <CheckCircle2 className="w-10 h-10 text-brand-yellow" />
-                        </div>
-
-                        <h2 className="text-2xl font-black text-brand-light uppercase tracking-tighter mb-4">
-                            Check Your Email
-                        </h2>
-
-                        <p className="text-gray-400 text-sm font-medium tracking-wide mb-8">
-                            We've sent password reset instructions to <strong className="text-brand-light">{email}</strong>.
-                            The link will expire in 1 hour.
+                    <div className="space-y-2">
+                        <h1 className="text-2xl font-semibold tracking-tight">Check your email</h1>
+                        <p className="text-sm text-muted-foreground">
+                            We've sent a password reset link to <br />
+                            <span className="font-medium text-foreground">{email}</span>
                         </p>
+                    </div>
 
-                        <div className="space-y-4 w-full">
-                            <button
-                                onClick={() => {
-                                    setSuccess(false);
-                                    setEmail("");
-                                }}
-                                className="block w-full py-4 rounded-2xl border border-white/10 hover:bg-white/[0.03] text-gray-400 hover:text-white transition-all text-xs font-bold uppercase tracking-[2px]"
-                            >
-                                Try Another Email
-                            </button>
+                    <div className="space-y-4">
+                        <Button
+                            variant="outline"
+                            className="w-full h-11"
+                            onClick={() => {
+                                setSuccess(false);
+                                setEmail("");
+                            }}
+                        >
+                            Try another email
+                        </Button>
 
-                            <button
-                                onClick={() => router.push("/auth/login")}
-                                className="block w-full py-4 bg-brand-yellow hover:bg-brand-yellow/90 text-black font-black uppercase tracking-wider rounded-2xl transition-all shadow-[0_0_20px_rgba(253,197,0,0.2)] hover:shadow-[0_0_30px_rgba(253,197,0,0.3)] text-xs"
-                            >
-                                Back to Login
-                            </button>
-                        </div>
+                        <Button
+                            variant="ghost"
+                            className="w-full"
+                            onClick={() => router.push("/auth/login")}
+                        >
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back to login
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -99,101 +86,73 @@ export default function ForgotPasswordContent() {
     }
 
     return (
-        <div className="relative min-h-screen flex items-center justify-center p-4 font-sans selection:bg-brand-yellow/30 overflow-hidden">
-            {/* Background Image with Overlay */}
-            <div className="absolute inset-0 z-0">
-                <Image
-                    src="/assets/images/background/image.png"
-                    alt="Background"
-                    fill
-                    className="object-cover"
-                    priority
-                />
-                <div className="absolute inset-0 bg-[#1D1D1B]/80 backdrop-blur-[2px]" />
-            </div>
-
-            {/* Main Content Card */}
-            <div className="relative z-10 w-full max-w-[480px] group">
-                {/* Glow effect */}
-                <div className="absolute -inset-1 bg-gradient-to-r from-brand-yellow/20 rounded-[2rem] blur-xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
-
-                <div className="relative flex flex-col items-center bg-[#1D1D1B] border border-white/10 rounded-[2rem] p-8 sm:p-12 shadow-2xl overflow-hidden">
-
-                    {/* Top Logo Section */}
-                    <div className="mb-10 transform hover:scale-105 transition-transform duration-500">
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+            <div className="w-full max-w-[400px] space-y-6">
+                <div className="flex flex-col space-y-2 text-center">
+                    <div className="mx-auto mb-4">
                         <Image
                             src="/assets/images/logos/FLOSSK Hub Logo.png"
                             alt="FLOSSK Logo"
-                            width={100}
-                            height={100}
-                            className="drop-shadow-2xl brightness-110"
+                            width={64}
+                            height={64}
+                            className="dark:invert-0"
                             priority
                         />
                     </div>
+                    <h1 className="text-2xl font-semibold tracking-tight">Forgot password?</h1>
+                    <p className="text-sm text-muted-foreground">
+                        Enter your email address and we'll send you a link to reset your password.
+                    </p>
+                </div>
 
-                    {/* Header */}
-                    <div className="w-full text-center mb-10">
-                        <h1 className="text-3xl font-black text-brand-light uppercase tracking-tighter mb-2">
-                            Reset Password
-                        </h1>
-                        <p className="text-gray-400 text-sm font-medium tracking-wide">
-                            Enter your email to receive a secure reset link.
-                        </p>
-                    </div>
+                <div className="grid gap-6">
+                    <form onSubmit={handleSubmit}>
+                        <div className="grid gap-4">
+                            {error && (
+                                <Alert variant="destructive">
+                                    <AlertDescription>{error}</AlertDescription>
+                                </Alert>
+                            )}
 
-                    {/* Form */}
-                    <form onSubmit={handleSubmit} className="w-full space-y-6">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-500 ml-1 uppercase tracking-[3px]">
-                                Email Address
-                            </label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-brand-yellow transition-colors">
-                                    <Mail size={14} />
-                                </div>
-                                <input
+                            <div className="grid gap-2">
+                                <Label htmlFor="email">Email</Label>
+                                <Input
                                     id="email"
+                                    placeholder="name@example.com"
                                     type="email"
-                                    className="block w-full pl-11 pr-4 py-4 bg-white/[0.03] border border-white/5 rounded-2xl focus:ring-1 focus:ring-brand-yellow/50 focus:border-brand-yellow/50 focus:outline-none transition-all placeholder:text-gray-600 text-brand-light text-sm"
-                                    placeholder="your.email@example.com"
+                                    autoCapitalize="none"
+                                    autoComplete="email"
+                                    autoCorrect="off"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    required
                                     disabled={isLoading}
+                                    className="h-11"
+                                    required
                                 />
                             </div>
-                        </div>
 
-                        {error && (
-                            <div className="text-red-500 text-xs font-bold text-center uppercase tracking-wide bg-red-500/10 p-2 rounded">
-                                {error}
-                            </div>
-                        )}
-
-                        <div className="space-y-3 pt-2">
-                            <button
-                                type="submit"
-                                disabled={isLoading || !email}
-                                className="block w-full py-4 bg-brand-yellow hover:bg-brand-yellow/90 text-black font-black uppercase tracking-wider rounded-2xl transition-all shadow-[0_0_20px_rgba(253,197,0,0.2)] hover:shadow-[0_0_30px_rgba(253,197,0,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-xs"
-                            >
+                            <Button disabled={isLoading} type="submit" className="w-full h-11 bg-brand-yellow text-brand-dark hover:bg-brand-yellow/90 font-semibold">
                                 {isLoading ? (
                                     <>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        SENDING...
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Sending Link...
                                     </>
                                 ) : (
-                                    "SEND RESET LINK"
+                                    "Send Reset Link"
                                 )}
-                            </button>
-
-                            <Link
-                                href="/auth/login"
-                                className="block w-full py-4 text-center rounded-2xl border border-white/10 hover:bg-white/[0.03] text-gray-400 hover:text-white transition-all text-xs font-bold uppercase tracking-[2px]"
-                            >
-                                Back to Login
-                            </Link>
+                            </Button>
                         </div>
                     </form>
+
+                    <div className="text-center text-sm">
+                        <Link
+                            href="/auth/login"
+                            className="text-muted-foreground hover:text-brand-yellow transition-colors inline-flex items-center"
+                        >
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back to login
+                        </Link>
+                    </div>
                 </div>
             </div>
         </div>
